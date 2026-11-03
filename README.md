@@ -4,7 +4,7 @@
   <img alt="林一 Lowkii — 把模型的能力，做成每天真会被用上的工具。" src="./assets/header-light.svg" width="100%">
 </picture>
 
-<br>
+<p>&nbsp;</p>
 
 我是林一，写代码的人。主要做 AI 应用和自动化工具，从数据库、接口一直做到界面，直到它能交到用户手里。
 
@@ -16,16 +16,8 @@
 
 ### 公开项目
 
-| 项目 | 说明 | 技术 |
-| :-- | :-- | :-- |
-| [salesup](https://github.com/sup-lh/salesup) | 销售新人培养管理系统：闯关任务、课程考核、带教复盘、转正答辩 | React · NestJS · PostgreSQL · MinIO |
+- [**salesup**](https://github.com/sup-lh/salesup)：销售新人培养管理系统，覆盖闯关任务、课程考核、带教复盘和转正答辩。<br><sub><samp>React · NestJS · PostgreSQL · MinIO · Docker</samp></sub>
 
-### 常用
-
-<samp>Go · TypeScript · Python</samp>
-<br>
-<samp>React · Next.js · NestJS · PostgreSQL · Docker</samp>
-
-<br>
+<p>&nbsp;</p>
 
 <sub>— Lowkii</sub>
