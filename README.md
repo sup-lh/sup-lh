@@ -13,5 +13,3 @@
 <br>
 
 **公开项目**：[salesup](https://github.com/sup-lh/salesup)，销售新人培养管理系统（React · NestJS · PostgreSQL）。其余项目多为客户交付，暂不公开。
-
-<sub>Hero 与卡片由 <a href="./scripts/build.py">scripts/build.py</a> 生成，字体为 Instrument Serif、Geist、Noto Sans SC（均为 SIL OFL）。</sub>
