@@ -1,0 +1,8 @@
+{
+  "name": "sup-lh-profile-builder",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "fontkit": "^2.0.4"
+  }
+}
