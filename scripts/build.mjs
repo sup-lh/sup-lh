@@ -1,17 +1,15 @@
 /**
  * Generate the GitHub profile SVGs (hero + workbench) for light and dark themes.
  *
- * Design synthesis:
- *   - Dark theme:  Swiss Modernist Minimalist Tech (0px sharp geometry, 1px hairline
- *                  grid, Obsidian + Sapphire atmosphere + Neon Jade surgical accent).
- *   - Light theme: Quiet Precision V4 (80% pure-white 1px Swiss open canvas, 20% single
- *                  stationary focal vessel with cold-quartz top beam & stationary 2px
- *                  metallic ridge, 95% obsidian-slate neutrality, zero pill soup).
+ * Radical Subtraction edition:
+ *   - Hero (1200x440):      Strict 0px Swiss Modernist architecture, monumental Geist Regular 400
+ *                           typography, Sapphire atmosphere (dark) / subtle quartz mist (light),
+ *                           minimal 4-stage execution loop with inset 2px filament.
+ *   - Workbench (1200x560): Quiet Precision V4 — 80% pure open Swiss hairline canvas + 20% single
+ *                           stationary focal vessel (cold quartz beam + stationary 2px metallic
+ *                           highlight ridge), zero pill soup, zero redundant metadata.
  *
- * All text is converted to vector outlines so typography renders identically across
- * GitHub web/mobile regardless of installed system fonts.
- *
- * Fonts (all SIL OFL): Geist[wght].ttf, GeistMono[wght].ttf, NotoSansSC[wght].ttf.
+ * Fonts (SIL OFL): Geist.ttf, GeistMono.ttf, NotoSansSC.ttf.
  *
  *   pnpm --dir scripts install
  *   node scripts/build.mjs <font-dir> <out-dir>
@@ -48,9 +46,7 @@ function getFont(key, wght = 400) {
     baseFontCache.set(key, base);
   }
   const clamped = key === "cjk" ? Math.min(Math.max(wght, 400), 700) : wght;
-  const inst = base.variationAxes?.wght
-    ? base.getVariation({ wght: clamped })
-    : base;
+  const inst = base.variationAxes?.wght ? base.getVariation({ wght: clamped }) : base;
   varFontCache.set(cacheKey, inst);
   return inst;
 }
@@ -69,13 +65,8 @@ function esc(s) {
     .replaceAll('"', "&quot;");
 }
 
-// Proportional Latin punctuation that should stay crisp in Geist instead of wide CJK full-width
 const PROPORTIONAL_PUNCT = new Set(["·", "–", "↔", "→"]);
 
-/**
- * Split a string into contiguous font runs, choosing main font if it contains
- * the glyph, keeping Latin & middle-dot crisp in Geist, and falling back to Noto Sans SC.
- */
 function segmentRuns(str, key, wght) {
   const main = getFont(key, wght);
   const cjk = getFont("cjk", wght);
@@ -96,7 +87,6 @@ function segmentRuns(str, key, wght) {
         throw new Error(`Missing glyph for U+${cp.toString(16)} (${ch})`);
       }
     } else if (key === "mono" && ch === "·" && sans.hasGlyphForCodePoint(cp)) {
-      // Keep middle-dot tight & crisp inside mono metadata strips
       chosen = sans;
     } else if (main.hasGlyphForCodePoint(cp)) {
       chosen = main;
@@ -131,7 +121,7 @@ function layoutRuns(str, key, size, wght = 400, tracking = 0) {
       const g = layout.glyphs[i];
       const pos = layout.positions[i];
       if (g.id === 0 && run.text[i] !== " ") {
-        throw new Error(`Notdef glyph encountered in "${str}" at "${run.text[i]}"`);
+        throw new Error(`Notdef glyph in "${str}" at "${run.text[i]}"`);
       }
       items.push({ glyph: g, pos, sc });
       totalW += pos.xAdvance * sc + tracking;
@@ -268,46 +258,15 @@ function text(
   return `<path fill="${fill}"${attrs ? " " + attrs : ""} d="${parts.join("")}"/>`;
 }
 
-function wrap(str, key, size, maxW, wght = 400, tracking = 0) {
-  const tokens = str.match(/[A-Za-z0-9~./+\-]+|\s+|./g) || [];
-  const noLineStart = new Set([..."，。、；：）·—！？】》"]);
-  const lines = [];
-  let cur = "";
-  for (const tok of tokens) {
-    if (
-      cur &&
-      measure(cur + tok, key, size, wght, tracking) > maxW &&
-      !noLineStart.has(tok)
-    ) {
-      lines.push(cur.trimEnd());
-      cur = tok.trimStart();
-    } else {
-      cur += tok;
-    }
-  }
-  if (cur) lines.push(cur);
-  return lines;
-}
-
-function para(str, key, size, x, y, maxW, fill, { wght = 400, lh = 22, tracking = 0.2, maxLines = 4 } = {}) {
-  const lines = wrap(str, key, size, maxW, wght, tracking);
-  if (lines.length > maxLines) {
-    throw new Error(`Paragraph exceeded ${maxLines} lines (${lines.length}): "${str}" -> ${JSON.stringify(lines)}`);
-  }
-  return lines
-    .map((line, i) => text(line, key, size, x, y + i * lh, fill, { wght, tracking }))
-    .join("");
-}
-
 // ---------------------------------------------------------------------------
-// 1.45px Geometric AI & Workbench Symbols (Quiet Precision V4 exact paths)
+// 1.45px Geometric AI Symbols (Quiet Precision V4 exact vector recipes)
 // ---------------------------------------------------------------------------
 
-function iconGroup(x, y, size, color, inner, attrs = "") {
+function iconGroup(x, y, size, color, inner) {
   const s = size / 16;
   return (
     `<g transform="translate(${num(x)} ${num(y)}) scale(${num(s)})" ` +
-    `fill="none" stroke="${color}" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round"${attrs ? " " + attrs : ""}>` +
+    `fill="none" stroke="${color}" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round">` +
     inner +
     `</g>`
   );
@@ -335,15 +294,6 @@ const ICONS = {
         `<circle cx="12.75" cy="5.25" r="1.15" fill="${color}" stroke="none"/>` +
         `<circle cx="3.5" cy="8.25" r="1.15" fill="${color}" stroke="none"/>`
     ),
-  evidenceTrace: (x, y, size, color) =>
-    iconGroup(
-      x,
-      y,
-      size,
-      color,
-      `<path d="M4.75 3.25H3A1.25 1.25 0 0 0 1.75 4.5v7A1.25 1.25 0 0 0 3 12.75h1.75M11.25 3.25H13A1.25 1.25 0 0 1 14.25 4.5v7A1.25 1.25 0 0 1 13 12.75h-1.75M5.75 8h4.5"/>` +
-        `<circle cx="8" cy="8" r="1.35" fill="${color}" stroke="none"/>`
-    ),
   anomalyBeacon: (x, y, size, color) =>
     iconGroup(
       x,
@@ -352,14 +302,6 @@ const ICONS = {
       color,
       `<path d="M8 2 14 8l-6 6-6-6 6-6Z"/>` +
         `<circle cx="8" cy="8" r="1.5" fill="${color}" stroke="none"/>`
-    ),
-  playbookVector: (x, y, size, color) =>
-    iconGroup(
-      x,
-      y,
-      size,
-      color,
-      `<path d="M3.5 12.5 12.5 3.5M6.25 3.5h6.25v6.25"/>`
     ),
 };
 
@@ -372,7 +314,7 @@ function vline(x, y1, y2, color) {
 }
 
 function checkMark(x, y, color, cls = "") {
-  return `<path${cls ? ` class="${cls}"` : ""} d="M${num(x)} ${num(y)} l3.8 3.8 l7.4 -8.2" fill="none" stroke="${color}" stroke-width="1.65" stroke-linecap="square" stroke-linejoin="miter"/>`;
+  return `<path${cls ? ` class="${cls}"` : ""} d="M${num(x)} ${num(y)} l3.6 3.6 l7.2 -7.8" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="square" stroke-linejoin="miter"/>`;
 }
 
 function wrapSvg(w, h, title, body, css = "") {
@@ -386,9 +328,7 @@ function wrapSvg(w, h, title, body, css = "") {
 }
 
 // ---------------------------------------------------------------------------
-// Independent Theme Calibration (NEVER naive CSS invert!)
-//   - Light: Quiet Precision V4 (Pure White #FFFFFF + Cold Quartz #F8FAFC + Obsidian #090E18 + Cobalt #2563EB)
-//   - Dark:  Transform9 Swiss Modernist (Obsidian #020801/#080B0E + Sapphire Atmosphere + Neon Jade #A2FA8E)
+// Independent Light & Dark Theme Calibration
 // ---------------------------------------------------------------------------
 
 const THEMES = {
@@ -397,413 +337,228 @@ const THEMES = {
     heroBg: "#ffffff",
     canvas: "#ffffff",
     subtle: "#f8fafc",
-    track: "#f1f4f8",
     rowActive: "#f6f8fb",
     rule: "#e4e9f0",
     ruleSoft: "#edf1f6",
     borderStrong: "#cbd5e1",
-    checkIdle: "#cbd5e1",
+    checkIdle: "#d4dce6",
     ink: "#090e18",
     body: "#1e293b",
     muted: "#64748b",
     faint: "#94a3b8",
     accent: "#2563eb",
-    accentInk: "#ffffff",
-    accentSoft: "#2563eb0f",
+    accentSoft: "#2563eb0c",
     liveDot: "#0d9488",
     infoDot: "#2563eb",
-    gridLine: "rgba(9,14,24,0.032)",
+    gridLine: "rgba(9,14,24,0.028)",
     atmoA: "#dce7fa",
     atmoB: "#eff6ff",
-    atmoC: "#dbeafe",
     ridgeStops: ["#090e18", "#1e40af", "#2563eb", "#1e40af", "#090e18"],
     vesselFill: "#ffffff",
-    vesselShadow: "rgba(9,14,24,0.08)",
-    vesselShadowSm: "rgba(9,14,24,0.03)",
-    ctaFill: "#090e18",
-    ctaInk: "#ffffff",
-    citeBg: "#f1f5f9",
-    citeDash: "#cbd5e1",
-    citeSolid: "#090e18",
-    supBg: "#f1f4f8",
-    supInk: "#475569",
-    supActiveBg: "#090e18",
-    supActiveInk: "#ffffff",
+    vesselShadow: "rgba(9,14,24,0.075)",
+    vesselShadowSm: "rgba(9,14,24,0.025)",
     filament: "#090e18",
-    barBase: "#cbd5e1",
-    barPeak: "#2563eb",
-    spectrum: [
-      { fill: "#090e18", ink: "#ffffff", hatch: false },
-      { fill: "#1e40af", ink: "#ffffff", hatch: false },
-      { fill: "#475569", ink: "#ffffff", hatch: true },
-      { fill: "#0f766e", ink: "#ffffff", hatch: false },
-    ],
-    hatchColor: "rgba(255,255,255,0.22)",
   },
   dark: {
     mode: "dark",
     heroBg: "#020801",
     canvas: "#080b0e",
     subtle: "#10161e",
-    track: "#151d27",
     rowActive: "#0e151d",
     rule: "#232c36",
     ruleSoft: "#171f28",
     borderStrong: "#2f3d4d",
-    checkIdle: "#364556",
+    checkIdle: "#344254",
     ink: "#f8fafc",
     body: "#cbd5e1",
     muted: "#8494a7",
     faint: "#58687c",
     accent: "#a2fa8e",
-    accentInk: "#020801",
-    accentSoft: "rgba(162,250,142,0.075)",
+    accentSoft: "rgba(162,250,142,0.07)",
     liveDot: "#a2fa8e",
     infoDot: "#38bdf8",
-    gridLine: "rgba(255,255,255,0.04)",
+    gridLine: "rgba(255,255,255,0.036)",
     atmoA: "#0042ac",
     atmoB: "#001a6a",
     atmoC: "#168ae2",
     ridgeStops: ["#10161e", "#0042ac", "#168ae2", "#a2fa8e", "#168ae2", "#10161e"],
     vesselFill: "#0c1117",
-    vesselShadow: "rgba(0,0,0,0.48)",
-    vesselShadowSm: "rgba(0,0,0,0.22)",
-    ctaFill: "#a2fa8e",
-    ctaInk: "#020801",
-    citeBg: "rgba(162,250,142,0.10)",
-    citeDash: "#364659",
-    citeSolid: "#a2fa8e",
-    supBg: "#18222e",
-    supInk: "#94a3b8",
-    supActiveBg: "#a2fa8e",
-    supActiveInk: "#020801",
+    vesselShadow: "rgba(0,0,0,0.46)",
+    vesselShadowSm: "rgba(0,0,0,0.20)",
     filament: "#a2fa8e",
-    barBase: "#283442",
-    barPeak: "#a2fa8e",
-    spectrum: [
-      { fill: "#1d4ed8", ink: "#ffffff", hatch: false },
-      { fill: "#0f766e", ink: "#ffffff", hatch: false },
-      { fill: "#334155", ink: "#f8fafc", hatch: true },
-      { fill: "#a2fa8e", ink: "#020801", hatch: false },
-    ],
-    hatchColor: "rgba(255,255,255,0.16)",
   },
 };
 
 const W = 1200;
 
 // ---------------------------------------------------------------------------
-// Data (100% Verified from sup-lh GitHub Account & Public Repositories)
+// Minimal High-Signal Content (Zero Repetition, Day-30 Pruned)
 // ---------------------------------------------------------------------------
 
 const PIPELINE = [
-  ["01", "感知与采集", "BLE 硬件 · 飞书 · 电商后台 · Win32"],
-  ["02", "归因与推演", "确定性因子拆解 · LLM · 本地 Whisper"],
-  ["03", "执行与路由", "Agent Skills · 桌面自动化 · 安全投递"],
-  ["04", "闭环与交付", "经营驾驶舱 · 原生工具 · 复查沉淀"],
+  ["01", "感知", "BLE · 飞书 · 电商"],
+  ["02", "归因", "因子拆解 · LLM · Whisper"],
+  ["03", "执行", "Agent · Skills · Win32"],
+  ["04", "交付", "经营工作台 · 原生工具"],
 ];
 
-const HERO_METRICS = [
-  {
-    idx: "01 / DELIVERY",
-    value: "50",
-    suffix: "+",
-    tag: "",
-    caption: "企业 AI 场景从需求拆解到上线",
-    monoCaption: false,
-  },
-  {
-    idx: "02 / ORIGINAL REPOS",
-    value: "62",
-    suffix: "",
-    tag: "25 IN 2026",
-    caption: "2021–2026 原创工程仓库",
-    monoCaption: false,
-  },
-  {
-    idx: "03 / OPEN SOURCE",
-    value: "03",
-    suffix: "",
-    tag: "PUBLIC",
-    caption: "airdrop-win · beanbridge · salesup",
-    monoCaption: true,
-  },
-  {
-    idx: "04 / DESIGN SYSTEM",
-    value: "V4",
-    suffix: "",
-    tag: "SWISS · QP",
-    caption: "1px 细线画布与人机归因规范",
-    monoCaption: false,
-  },
-];
-
-const LEDGER_ROWS = [
+const SHIPPED = [
   {
     name: "airdrop-win",
-    meta: "v1.0.0 · PUBLIC",
+    note: "Windows ↔ Apple 局域网隔空传",
+    spec: "Go · ~9 MB",
     status: "live",
-    desc: "Windows ↔ Apple 局域网高速互传与双向剪贴板",
-    stack: "Go · TypeScript · Win32 · PWA · Shortcuts",
-    spec: "~9 MB 单文件",
-    specSub: "零依赖 · 免装 App",
     active: true,
   },
   {
     name: "beanbridge",
-    meta: "v0.5.1 · PUBLIC",
+    note: "D3200 蓝牙纯内存语音路由",
+    spec: "Swift · BLE",
     status: "live",
-    desc: "安克 D3200 蓝牙纯内存 Whisper 转写与安全路由",
-    stack: "Swift · AppKit · BLE · whisper.cpp · Python",
-    spec: "65 项测试",
-    specSub: "Apple Silicon 原生",
     active: false,
   },
   {
     name: "salesup",
-    meta: "FULL-STACK · PUBLIC",
+    note: "销售新人培养与复盘系统",
+    spec: "React · Nest",
     status: "info",
-    desc: "销售新人培养闯关、课程考核、复盘与数据看板",
-    stack: "React · NestJS · PostgreSQL · MinIO · Docker",
-    spec: "Monorepo",
-    specSub: "全栈生产部署",
-    active: false,
-  },
-  {
-    name: "经营归因工作台",
-    meta: "COMMERCIAL · PRIVATE",
-    status: "private",
-    desc: "跨境多店经营驾驶舱、异常检测与 3 秒人机拍板",
-    stack: "Go · React · TypeScript · PostgreSQL · 飞书",
-    spec: "AI 闭环",
-    specSub: "确定性拆解 + 溯源",
-    active: false,
-  },
-  {
-    name: "Agent & 自动化",
-    meta: "SYSTEMS · PRIVATE",
-    status: "private",
-    desc: "设计规范 Skills、跨境采集分析与 AI 视频流水线",
-    stack: "MCP · Playwright · CDP · Seedance · pgvector",
-    spec: "50+ 场景",
-    specSub: "从拆解到上线交付",
     active: false,
   },
 ];
 
 const PILLARS = [
   {
-    idx: "01",
-    label: "企业 AI 工作台",
-    title: "可溯源经营驾驶舱",
-    desc: "异常检测、确定性因子拆解、可追溯 RAG 知识库，以及飞书多维表格与审批闭环。",
+    idx: "02",
+    tag: "经营工作台",
+    title: "可溯源归因与闭环",
+    desc: "异常检测、因子拆解与人机拍板。",
     spec: "GO · REACT · PGVECTOR",
   },
   {
-    idx: "02",
-    label: "原生工具与硬件",
-    title: "零依赖跨端器物",
-    desc: "macOS 蓝牙纯内存 Whisper 转写工作台；Windows 单文件 Go 隔空传与双向剪贴板。",
-    spec: "SWIFT · WIN32 · BLE",
-  },
-  {
     idx: "03",
-    label: "Agent 与 Skills",
-    title: "让模型操作真实软件",
-    desc: "Computer-Use 桌面与浏览器智能体，沉淀 Swiss / Quiet Precision 设计规范。",
-    spec: "MCP · CDP · PLAYWRIGHT",
+    tag: "原生工具",
+    title: "零依赖跨端器物",
+    desc: "macOS 蓝牙转写与 Win32 局域网互传。",
+    spec: "SWIFT · WIN32 · WHISPER.CPP",
   },
   {
     idx: "04",
-    label: "跨境与 AI 产线",
-    title: "数据管道与内容生成",
-    desc: "TikTok 运营采集与广告异常告警；脚本、分镜、图生视频到剪辑的自动化流水线。",
-    spec: "SEEDANCE · KLING · FFMPEG",
+    tag: "Agent 工程",
+    title: "让模型操作真实软件",
+    desc: "桌面智能体、Skills 与视频流水线。",
+    spec: "MCP · PLAYWRIGHT · FFMPEG",
   },
 ];
 
-const SPECTRUM_ITEMS = [
-  { name: "企业工作台与业务系统", count: 9, pct: 36 },
-  { name: "Agent 工程与 Skills", count: 6, pct: 24 },
-  { name: "跨境数据与 AI 产线", count: 6, pct: 24 },
-  { name: "跨端原生工具与硬件", count: 4, pct: 16 },
-];
-
-const TRAJECTORY = [
-  { yr: "2021", count: 3, cap: "Java 起步" },
-  { yr: "2022", count: 4, cap: "校园小程序" },
-  { yr: "2024", count: 10, cap: "政企系统" },
-  { yr: "2025", count: 19, cap: "AI 平台" },
-  { yr: "2026", count: 26, cap: "工作台 & 原生", peak: true },
-];
-
-const STACK = [
-  ["LANGUAGES", "Go · TypeScript · Swift · Python · Java"],
-  ["SYSTEMS & UI", "React · Next.js · AppKit · Gin · NestJS"],
-  ["AI & DATA", "PostgreSQL · pgvector · whisper.cpp · MCP"],
-  ["ECOSYSTEM", "飞书生态 · Win32 · BLE · Docker"],
+const TIMELINE = [
+  ["2021", "Java 起步"],
+  ["2022", "校园小程序"],
+  ["2024", "政企系统"],
+  ["2025", "AI 创作平台"],
+  ["2026", "AI 工作台 · 原生工具"],
 ];
 
 // ---------------------------------------------------------------------------
-// SVG 1: Hero (1200 x 524, Strict 0px Swiss Modernist Architecture)
+// SVG 1: Hero (1200 x 436 — Airy 0px Swiss Modernist Architecture)
 // ---------------------------------------------------------------------------
 
 function buildHero(t) {
-  const H = 524;
-  const splitX = 736;
-  const topH = 48;
-  const midBottom = 370;
+  const H = 436;
+  const topH = 46;
+  const splitX = 788;
   const p = [];
 
   const atmoDefs =
     t.mode === "dark"
-      ? `<radialGradient id="atmo1" cx="78%" cy="22%" r="58%">` +
-        `<stop offset="0%" stop-color="${t.atmoA}" stop-opacity="0.44"/>` +
-        `<stop offset="52%" stop-color="${t.atmoB}" stop-opacity="0.22"/>` +
+      ? `<radialGradient id="atmo1" cx="76%" cy="22%" r="58%">` +
+        `<stop offset="0%" stop-color="${t.atmoA}" stop-opacity="0.46"/>` +
+        `<stop offset="54%" stop-color="${t.atmoB}" stop-opacity="0.22"/>` +
         `<stop offset="100%" stop-color="${t.heroBg}" stop-opacity="0"/>` +
         `</radialGradient>` +
         `<radialGradient id="atmo2" cx="95%" cy="8%" r="36%">` +
         `<stop offset="0%" stop-color="${t.atmoC}" stop-opacity="0.22"/>` +
         `<stop offset="100%" stop-color="${t.heroBg}" stop-opacity="0"/>` +
-        `</radialGradient>` +
-        `<radialGradient id="atmo3" cx="22%" cy="56%" r="38%">` +
-        `<stop offset="0%" stop-color="${t.accent}" stop-opacity="0.05"/>` +
-        `<stop offset="100%" stop-color="${t.heroBg}" stop-opacity="0"/>` +
         `</radialGradient>`
-      : `<radialGradient id="atmo1" cx="84%" cy="18%" r="50%">` +
-        `<stop offset="0%" stop-color="${t.atmoA}" stop-opacity="0.46"/>` +
-        `<stop offset="55%" stop-color="${t.atmoB}" stop-opacity="0.22"/>` +
-        `<stop offset="100%" stop-color="${t.heroBg}" stop-opacity="0"/>` +
-        `</radialGradient>` +
-        `<radialGradient id="atmo2" cx="18%" cy="15%" r="36%">` +
-        `<stop offset="0%" stop-color="${t.atmoC}" stop-opacity="0.16"/>` +
+      : `<radialGradient id="atmo1" cx="84%" cy="16%" r="52%">` +
+        `<stop offset="0%" stop-color="${t.atmoA}" stop-opacity="0.44"/>` +
+        `<stop offset="56%" stop-color="${t.atmoB}" stop-opacity="0.20"/>` +
         `<stop offset="100%" stop-color="${t.heroBg}" stop-opacity="0"/>` +
         `</radialGradient>`;
 
   p.push(
     `<defs>` +
-      `<pattern id="tech-grid" width="40" height="40" patternUnits="userSpaceOnUse">` +
-      `<path d="M40 0H0V40" fill="none" stroke="${t.gridLine}" stroke-width="1"/>` +
+      `<pattern id="tech-grid" width="48" height="48" patternUnits="userSpaceOnUse">` +
+      `<path d="M48 0H0V48" fill="none" stroke="${t.gridLine}" stroke-width="1"/>` +
       `</pattern>` +
       atmoDefs +
-      `<clipPath id="mid-clip"><rect x="1" y="${topH + 1}" width="${W - 2}" height="${midBottom - topH - 1}"/></clipPath>` +
+      `<clipPath id="stage-clip"><rect x="1" y="${topH + 1}" width="${W - 2}" height="${H - topH - 2}"/></clipPath>` +
       `</defs>`
   );
 
+  // Outer 0px crisp architectural frame
   p.push(`<rect x="0.5" y="0.5" width="${W - 1}" height="${H - 1}" fill="${t.heroBg}" stroke="${t.rule}" stroke-width="1" shape-rendering="crispEdges"/>`);
-  p.push(`<g clip-path="url(#mid-clip)">`);
-  p.push(`<rect x="1" y="${topH + 1}" width="${W - 2}" height="${midBottom - topH - 1}" fill="url(#atmo1)"/>`);
-  p.push(`<rect x="1" y="${topH + 1}" width="${W - 2}" height="${midBottom - topH - 1}" fill="url(#atmo2)"/>`);
+  p.push(`<g clip-path="url(#stage-clip)">`);
+  p.push(`<rect x="1" y="${topH + 1}" width="${W - 2}" height="${H - topH - 2}" fill="url(#atmo1)"/>`);
   if (t.mode === "dark") {
-    p.push(`<rect x="1" y="${topH + 1}" width="${W - 2}" height="${midBottom - topH - 1}" fill="url(#atmo3)"/>`);
+    p.push(`<rect x="1" y="${topH + 1}" width="${W - 2}" height="${H - topH - 2}" fill="url(#atmo2)"/>`);
   }
-  p.push(`<rect x="1" y="${topH + 1}" width="${W - 2}" height="${midBottom - topH - 1}" fill="url(#tech-grid)"/>`);
+  p.push(`<rect x="1" y="${topH + 1}" width="${W - 2}" height="${H - topH - 2}" fill="url(#tech-grid)"/>`);
   p.push(`</g>`);
 
   // Shared 1px structural rails
   p.push(hline(1, W - 1, topH, t.rule));
-  p.push(hline(1, W - 1, midBottom, t.rule));
-  p.push(vline(splitX, topH + 1, midBottom, t.rule));
-  for (let i = 1; i < 4; i++) {
-    p.push(vline(i * (W / 4), midBottom + 1, H - 1, t.rule));
-  }
+  p.push(vline(splitX, topH + 1, H - 1, t.rule));
 
-  // ---- Top Architectural Rail (y = 0..48)
-  p.push(ICONS.orderPrism(32, 16, 16, t.ink));
-  p.push(text("LOWKII / SUP-LH", "mono", 12.5, 58, 28.5, t.ink, { wght: 600, tracking: 1.6 }));
-  p.push(vline(236, 16, 32, t.rule));
-  p.push(text("AI SYSTEMS & NATIVE TOOLS", "mono", 11.5, 254, 28.5, t.muted, { wght: 400, tracking: 1.5 }));
+  // ---- Top Architectural Rail (Ultra-quiet)
+  p.push(ICONS.orderPrism(36, 15, 16, t.ink));
+  p.push(text("LOWKII", "mono", 12.5, 62, 27.5, t.ink, { wght: 600, tracking: 2.2 }));
 
-  const rightStatus = "EST. 2021 · 62 REPOS · 2026 ACTIVE";
-  const rightStatusW = measure(rightStatus, "mono", 11.5, 500, 1.3);
-  p.push(`<circle cx="${num(W - 32 - rightStatusW - 12)}" cy="24" r="3" fill="${t.liveDot}" class="pulse"/>`);
-  p.push(text(rightStatus, "mono", 11.5, W - 32, 28.5, t.muted, { wght: 500, tracking: 1.3, anchor: "end" }));
+  const est = "EST. 2021";
+  const estW = measure(est, "mono", 11.5, 500, 1.8);
+  p.push(`<circle cx="${num(W - 36 - estW - 12)}" cy="23" r="3" fill="${t.liveDot}" class="pulse"/>`);
+  p.push(text(est, "mono", 11.5, W - 36, 27.5, t.muted, { wght: 500, tracking: 1.8, anchor: "end" }));
 
-  // ---- Left Column (x = 0..736)
-  p.push(text("00 / PROFILE", "mono", 11.5, 32, 84, t.faint, { wght: 500, tracking: 1.8 }));
+  // ---- Left Stage (x = 0..788): Monumental Regular Typography + Generous Whitespace
+  const wmSize = 148;
+  const wmX = 34;
+  const wmY = 232;
+  const wmW = measure("Lowkii", "sans", wmSize, 400, -5.2);
+  p.push(text("Lowkii", "sans", wmSize, wmX, wmY, t.ink, { wght: 400, tracking: -5.2 }));
+  // Strict 0px surgical accent square
+  p.push(`<rect x="${num(wmX + wmW + 12)}" y="${num(wmY - 20)}" width="20" height="20" fill="${t.accent}"/>`);
 
-  const wmSize = 128;
-  const wmX = 26;
-  const wmY = 212;
-  const wmW = measure("Lowkii", "sans", wmSize, 400, -4.6);
-  p.push(text("Lowkii", "sans", wmSize, wmX, wmY, t.ink, { wght: 400, tracking: -4.6 }));
-  p.push(`<rect x="${num(wmX + wmW + 10)}" y="${num(wmY - 18)}" width="18" height="18" fill="${t.accent}"/>`);
+  p.push(text("把 AI 落进真实业务与原生工具。", "cjk", 26, 40, 314, t.ink, { wght: 500, tracking: 0.4 }));
+  p.push(text("Go · TypeScript · Swift · Python · 飞书 · MCP", "mono", 12, 40, 368, t.muted, { wght: 400, tracking: 1.2 }));
 
-  p.push(text("把 AI 落进真实业务与原生工具的全栈工程师。", "cjk", 24, 32, 272, t.ink, { wght: 500, tracking: 0.3 }));
-  p.push(
-    text("Enterprise AI workbenches, autonomous agents, and native cross-platform instruments.", "sans", 15, 32, 306, t.muted, {
-      wght: 400,
-    })
-  );
-  p.push(text("GO · TYPESCRIPT · SWIFT · PYTHON · FEISHU · MCP", "mono", 11.5, 32, 342, t.faint, { wght: 500, tracking: 1.5 }));
-
-  // ---- Right Column (x = 736..1200): 0px Hairline Execution Loop
+  // ---- Right Stage (x = 788..1200): Minimal 4-Step Execution Loop
   const rx = splitX;
   const rw = W - rx - 1;
-  const subH = 44;
+  const subH = 42;
   const stageTop = topH + subH;
-  const rowH = (midBottom - stageTop) / 4;
+  const rowH = (H - stageTop - 1) / 4; // 347 / 4 = 86.75
 
   p.push(hline(rx + 1, W - 1, stageTop, t.rule));
-  p.push(ICONS.causalSplit(rx + 24, topH + 14.5, 15, t.muted));
-  p.push(text("EXECUTION LOOP", "mono", 11.5, rx + 48, topH + 26.5, t.muted, { wght: 500, tracking: 1.6 }));
+  p.push(ICONS.causalSplit(rx + 26, topH + 13.5, 15, t.muted));
+  p.push(text("LOOP", "mono", 11.5, rx + 50, topH + 25.5, t.muted, { wght: 500, tracking: 2 }));
+  p.push(`<circle cx="${W - 36}" cy="${num(topH + 21)}" r="3" fill="${t.liveDot}" class="pulse"/>`);
 
-  const runW = measure("RUNNING", "mono", 11.5, 600, 1.6);
-  p.push(`<circle cx="${num(W - 32 - runW - 10)}" cy="${num(topH + 22)}" r="3" fill="${t.liveDot}" class="pulse"/>`);
-  p.push(text("RUNNING", "mono", 11.5, W - 32, topH + 26.5, t.mode === "dark" ? t.accent : t.liveDot, { wght: 600, tracking: 1.6, anchor: "end" }));
-
+  // Animated 0px row wash + Quiet Precision inset 2px vertical filament
   p.push(
     `<g class="hl">` +
       `<rect x="${rx + 1}" y="${num(stageTop + 1)}" width="${rw - 1}" height="${num(rowH - 1)}" fill="${t.accentSoft}"/>` +
-      `<rect x="${rx + 10}" y="${num(stageTop + 16)}" width="2" height="${num(rowH - 32)}" rx="1" fill="${t.filament}"/>` +
+      `<rect x="${rx + 12}" y="${num(stageTop + 22)}" width="2" height="${num(rowH - 44)}" rx="1" fill="${t.filament}"/>` +
       `</g>`
   );
 
   PIPELINE.forEach(([idx, title, detail], i) => {
     const ry = stageTop + i * rowH;
     if (i > 0) p.push(hline(rx + 1, W - 1, ry, t.ruleSoft));
-    p.push(text(idx, "mono", 12, rx + 24, ry + 30, t.faint, { wght: 500, tracking: 1 }));
-    p.push(text(idx, "mono", 12, rx + 24, ry + 30, t.accent, { wght: 600, tracking: 1, attrs: `class="n${i}"` }));
-    p.push(text(title, "cjk", 16.5, rx + 58, ry + 30, t.ink, { wght: 500, tracking: 0.3 }));
-    p.push(text(detail, "cjk", 12.5, rx + 58, ry + 52, t.muted, { wght: 400, tracking: 0.1 }));
-    p.push(checkMark(W - 44, ry + 33, t.checkIdle));
-    p.push(checkMark(W - 44, ry + 33, t.mode === "dark" ? t.accent : t.liveDot, `n${i}`));
-  });
-
-  // ---- Bottom Row (y = 370..524): 01-04 Indexed Proven Results Rail
-  const colW = W / 4;
-  HERO_METRICS.forEach((m, i) => {
-    const cx = i * colW + 28;
-    p.push(text(m.idx, "mono", 11, cx, midBottom + 28, t.faint, { wght: 500, tracking: 1.5 }));
-
-    const valY = midBottom + 98;
-    p.push(text(m.value, "sans", 48, cx - 2, valY, t.ink, { wght: 400, tracking: -1.8 }));
-    const vw = measure(m.value, "sans", 48, 400, -1.8);
-
-    if (m.suffix) {
-      p.push(text(m.suffix, "sans", 44, cx - 2 + vw + 2, valY - 2, t.accent, { wght: 400 }));
-    } else if (m.tag) {
-      const tx = cx - 2 + vw + 12;
-      if (m.tag === "PUBLIC") {
-        p.push(`<circle cx="${num(tx + 3)}" cy="${num(valY - 6)}" r="3" fill="${t.liveDot}"/>`);
-        p.push(text(m.tag, "mono", 11.5, tx + 12, valY - 2, t.muted, { wght: 500, tracking: 1.3 }));
-      } else {
-        p.push(
-          text(m.tag, "mono", 11.5, tx, valY - 2, m.tag.includes("2026") ? (t.mode === "dark" ? t.accent : t.liveDot) : t.muted, {
-            wght: 500,
-            tracking: 1.2,
-          })
-        );
-      }
-    }
-
-    assertFits(m.caption, m.monoCaption ? "mono" : "cjk", m.monoCaption ? 11.5 : 13, colW - 52, 400, m.monoCaption ? 0.2 : 0.2);
-    p.push(
-      text(m.caption, m.monoCaption ? "mono" : "cjk", m.monoCaption ? 11.5 : 13, cx, midBottom + 130, t.muted, {
-        wght: 400,
-        tracking: 0.2,
-      })
-    );
+    p.push(text(idx, "mono", 12, rx + 26, ry + 38, t.faint, { wght: 500, tracking: 1 }));
+    p.push(text(idx, "mono", 12, rx + 26, ry + 38, t.accent, { wght: 600, tracking: 1, attrs: `class="n${i}"` }));
+    p.push(text(title, "cjk", 17.5, rx + 62, ry + 39, t.ink, { wght: 500, tracking: 0.4 }));
+    p.push(text(detail, "cjk", 13, rx + 62, ry + 64, t.muted, { wght: 400, tracking: 0.15 }));
+    p.push(checkMark(W - 48, ry + 42, t.checkIdle));
+    p.push(checkMark(W - 48, ry + 42, t.mode === "dark" ? t.accent : t.liveDot, `n${i}`));
   });
 
   const CYCLE = 8.0;
@@ -833,25 +588,23 @@ function buildHero(t) {
   return wrapSvg(
     W,
     H,
-    "Lowkii (sup-lh) — 把 AI 落进真实业务与原生工具的全栈工程师",
+    "Lowkii — 把 AI 落进真实业务与原生工具。",
     p.join(""),
     cssParts.join("")
   );
 }
 
 // ---------------------------------------------------------------------------
-// SVG 2: Quiet Precision Workbench (1200 x 928)
-//   80% Continuous 1px Swiss Open-Canvas + 20% Single Stationary Focal Vessel
+// SVG 2: Quiet Precision Workbench (1200 x 564)
+//   80% Open Swiss Hairline Canvas + 20% Single Stationary Focal Vessel
 // ---------------------------------------------------------------------------
 
 function buildWorkbench(t) {
-  const H = 928;
-  const band1H = 408;
-  const band2H = 198; // y = 408 .. 606
-  const band3H = 224; // y = 606 .. 830
-  // band4: y = 830 .. 928 (98px)
-  const split1X = 744;
-  const split3X = 696;
+  const H = 564;
+  const row1H = 264;
+  const row2H = 182; // y = 264 .. 446
+  // row3: y = 446 .. 564 (118px)
+  const split1X = 720;
   const p = [];
 
   const ridgeStops = t.ridgeStops
@@ -861,318 +614,142 @@ function buildWorkbench(t) {
   p.push(
     `<defs>` +
       `<linearGradient id="metallic-ridge" x1="0%" y1="0%" x2="100%" y2="0%">${ridgeStops}</linearGradient>` +
-      `<filter id="vessel-shadow" x="-6%" y="-6%" width="112%" height="118%">` +
+      `<filter id="vessel-shadow" x="-6%" y="-8%" width="112%" height="122%">` +
       `<feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="${t.vesselShadowSm}"/>` +
       `<feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="${t.vesselShadow}"/>` +
       `</filter>` +
-      `<pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)">` +
-      `<line x1="0" y1="0" x2="0" y2="8" stroke="${t.hatchColor}" stroke-width="2"/>` +
-      `</pattern>` +
       `</defs>`
   );
 
   // Continuous 0px Swiss Open-Canvas Sheet
   p.push(`<rect x="0.5" y="0.5" width="${W - 1}" height="${H - 1}" fill="${t.canvas}" stroke="${t.rule}" stroke-width="1" shape-rendering="crispEdges"/>`);
 
-  // Master horizontal shared 1px rails
-  p.push(hline(1, W - 1, band1H, t.rule));
-  p.push(hline(1, W - 1, band1H + band2H, t.rule));
-  p.push(hline(1, W - 1, band1H + band2H + band3H, t.rule));
-
-  // Master vertical shared 1px rails
-  p.push(vline(split1X, 1, band1H, t.rule));
-  for (let i = 1; i < 4; i++) {
-    p.push(vline(i * (W / 4), band1H + 1, band1H + band2H, t.rule));
-    p.push(vline(i * (W / 4), band1H + band2H + band3H + 1, H - 1, t.rule));
-  }
-  p.push(vline(split3X, band1H + band2H + 1, band1H + band2H + band3H, t.rule));
+  // Master shared 1px rails
+  p.push(hline(1, W - 1, row1H, t.rule));
+  p.push(hline(1, W - 1, row1H + row2H, t.rule));
+  p.push(vline(split1X, 1, row1H, t.rule));
+  p.push(vline(400, row1H + 1, row1H + row2H, t.rule));
+  p.push(vline(800, row1H + 1, row1H + row2H, t.rule));
 
   // =========================================================================
-  // BAND 1 LEFT (x = 0..744): High-Signal Repository & Delivery Ledger
+  // ROW 1 LEFT (x = 0..720): Monumental 50+ Enterprise AI Delivery Anchor
   // =========================================================================
-  const headerH = 46;
-  const colHdrH = 32;
-  p.push(hline(1, split1X, headerH, t.rule));
-  p.push(hline(1, split1X, headerH + colHdrH, t.ruleSoft));
+  const nw01 = measure("01", "mono", 12, 600, 1.2);
+  p.push(text("01", "mono", 12, 36, 40, t.accent, { wght: 600, tracking: 1.2 }));
+  p.push(text("企业 AI 落地", "cjk", 13, 36 + nw01 + 10, 40, t.muted, { wght: 500, tracking: 0.8 }));
 
-  p.push(ICONS.evidenceTrace(28, 15.5, 15, t.muted));
-  p.push(text("01 / SHIPPED REPOSITORIES & DELIVERY LEDGER", "mono", 11.5, 52, 27, t.muted, { wght: 500, tracking: 1.5 }));
-  p.push(text("3 PUBLIC · 59 PRIVATE", "mono", 11, split1X - 28, 27, t.faint, { wght: 500, tracking: 1.2, anchor: "end" }));
+  // Monumental Geist Regular 400 "50+"
+  const bigX = 32;
+  const bigY = 170;
+  p.push(text("50", "sans", 112, bigX, bigY, t.ink, { wght: 400, tracking: -4.2 }));
+  const w50 = measure("50", "sans", 112, 400, -4.2);
+  p.push(text("+", "sans", 96, bigX + w50 + 2, bigY - 4, t.accent, { wght: 400 }));
 
-  const thY = headerH + 20;
-  p.push(text("PROJECT", "mono", 10.5, 28, thY, t.faint, { wght: 500, tracking: 1.4 }));
-  p.push(text("ARCHITECTURE & SCOPE", "mono", 10.5, 226, thY, t.faint, { wght: 500, tracking: 1.4 }));
-  p.push(text("VERIFIED SPEC", "mono", 10.5, split1X - 28, thY, t.faint, { wght: 500, tracking: 1.4, anchor: "end" }));
+  const tx = 256;
+  p.push(text("从需求拆解到上线交付", "cjk", 23, tx, 126, t.ink, { wght: 500, tracking: 0.3 }));
+  p.push(text("覆盖跨境电商、制造、销售与财务团队的经营闭环。", "cjk", 14.5, tx, 162, t.muted, { wght: 400, tracking: 0.2 }));
 
-  const rowStart = headerH + colHdrH;
-  const rowH = (band1H - rowStart) / LEDGER_ROWS.length;
-
-  LEDGER_ROWS.forEach((r, i) => {
-    const ry = rowStart + i * rowH;
-    if (i > 0) p.push(hline(1, split1X, ry, t.ruleSoft));
-
-    if (r.active) {
-      p.push(`<rect x="1" y="${num(ry + 1)}" width="${split1X - 1}" height="${num(rowH - 1)}" fill="${t.rowActive}"/>`);
-      p.push(`<rect x="12" y="${num(ry + 15)}" width="2" height="${num(rowH - 30)}" rx="1" fill="${t.filament}"/>`);
-    }
-
-    const dotCx = 31;
-    const dotCy = ry + 24.5;
-    if (r.status === "live") {
-      p.push(`<circle cx="${dotCx}" cy="${dotCy}" r="3" fill="${t.liveDot}"/>`);
-    } else if (r.status === "info") {
-      p.push(`<circle cx="${dotCx}" cy="${dotCy}" r="3" fill="${t.infoDot}"/>`);
-    } else {
-      p.push(`<circle cx="${dotCx}" cy="${dotCy}" r="2.75" fill="none" stroke="${t.faint}" stroke-width="1.3"/>`);
-    }
-
-    const isCjkName = /[\u4e00-\u9fff]/.test(r.name);
-    p.push(text(r.name, isCjkName ? "cjk" : "sans", 14.5, 44, ry + 29, t.ink, { wght: 600, tracking: isCjkName ? 0.2 : -0.2 }));
-    p.push(text(r.meta, "mono", 10.5, 44, ry + 49, r.status === "private" ? t.faint : t.muted, { wght: 500, tracking: 0.9 }));
-
-    assertFits(r.desc, "cjk", 13.2, 360, 400, 0.15);
-    p.push(text(r.desc, "cjk", 13.2, 226, ry + 29, t.body, { wght: 400, tracking: 0.15 }));
-    p.push(text(r.stack, "mono", 10.8, 226, ry + 49, t.faint, { wght: 400, tracking: 0.2 }));
-
-    p.push(text(r.spec, "cjk", 13, split1X - 28, ry + 29, r.active ? t.ink : t.body, { wght: 600, anchor: "end" }));
-    p.push(text(r.specSub, "cjk", 11, split1X - 28, ry + 49, t.muted, { wght: 400, anchor: "end" }));
-  });
+  // Single quiet bottom strip inside Left cell (ZERO pill chips!)
+  p.push(hline(1, split1X, row1H - 50, t.ruleSoft));
+  const casesLine = "经营驾驶舱  ·  飞书多维表格与审批  ·  可溯源 RAG  ·  AI 视频产线";
+  assertFits(casesLine, "cjk", 13, split1X - 72, 400, 0.2);
+  p.push(text(casesLine, "cjk", 13, 36, row1H - 20, t.muted, { wght: 400, tracking: 0.2 }));
 
   // =========================================================================
-  // BAND 1 RIGHT (x = 744..1200): THE SINGLE STATIONARY FOCAL VESSEL (20%)
+  // ROW 1 RIGHT (x = 720..1200): THE SINGLE STATIONARY FOCAL VESSEL (20%)
+  //   Real shipped public repositories — 3 clean single-line ledger rows!
   // =========================================================================
   const vx = split1X + 24;
   const vy = 22;
-  const vw = W - split1X - 48; // 408
-  const vh = band1H - 44; // 364
-  const beamH = 44;
+  const vw = W - split1X - 48; // 432
+  const vh = row1H - 44; // 220
+  const beamH = 40;
 
   p.push(`<g>`);
   p.push(
     `<rect x="${vx}" y="${vy}" width="${vw}" height="${vh}" rx="10" ` +
       `fill="${t.vesselFill}" stroke="${t.borderStrong}" stroke-width="1" filter="url(#vessel-shadow)"/>`
   );
+  // Cold Quartz Top Beam
   p.push(
     `<path d="M${vx + 10} ${vy + 0.5} H${vx + vw - 10} Q${vx + vw - 0.5} ${vy + 0.5} ${vx + vw - 0.5} ${vy + 10} ` +
       `V${vy + beamH} H${vx + 0.5} V${vy + 10} Q${vx + 0.5} ${vy + 0.5} ${vx + 10} ${vy + 0.5} Z" fill="${t.subtle}"/>`
   );
-  // Stationary 2px Metallic Highlight Ridge on Cold Quartz Top Beam bottom edge
+  // Stationary 2px Metallic Highlight Ridge on beam bottom edge
   p.push(`<rect x="${vx + 1}" y="${vy + beamH}" width="${vw - 2}" height="2" fill="url(#metallic-ridge)"/>`);
 
-  p.push(ICONS.orderPrism(vx + 18, vy + 14.5, 15, t.ink));
-  p.push(text("ENGINEERING DOCTRINE", "mono", 11, vx + 40, vy + 26, t.ink, { wght: 600, tracking: 1.4 }));
+  p.push(ICONS.orderPrism(vx + 18, vy + 12.5, 15, t.ink));
+  p.push(text("SHIPPED PUBLIC", "mono", 11, vx + 40, vy + 24, t.ink, { wght: 600, tracking: 1.5 }));
+  p.push(text("03", "mono", 11, vx + vw - 18, vy + 24, t.muted, { wght: 500, tracking: 1.2, anchor: "end" }));
 
-  const tagText = "QP · V4";
-  const tagW = measure(tagText, "mono", 10.5, 500, 1.1) + 16;
-  p.push(`<rect x="${num(vx + vw - 16 - tagW)}" y="${vy + 11.5}" width="${num(tagW)}" height="21" rx="5" fill="${t.track}" stroke="${t.rule}" stroke-width="1"/>`);
-  p.push(text(tagText, "mono", 10.5, vx + vw - 16 - tagW / 2, vy + 25.5, t.muted, { wght: 500, tracking: 1.1, anchor: "middle" }));
+  const bodyTop = vy + beamH + 2;
+  const sRowH = (vh - beamH - 2) / SHIPPED.length; // 178 / 3 = 59.33
 
-  // Interior Zone A: Unbroken Inline Superscript Attribution Statement
-  const ix = vx + 20;
-  p.push(text("ATTRIBUTION & CRAFT", "mono", 10.5, ix, vy + 70, t.faint, { wght: 500, tracking: 1.5 }));
+  SHIPPED.forEach((s, i) => {
+    const ry = bodyTop + i * sRowH;
+    if (i > 0) p.push(hline(vx + 1, vx + vw - 1, ry, t.ruleSoft));
+    if (s.active) {
+      p.push(`<rect x="${vx + 1}" y="${num(ry + 1)}" width="${vw - 2}" height="${num(sRowH - 1)}" fill="${t.rowActive}"/>`);
+      p.push(`<rect x="${vx + 10}" y="${num(ry + 14)}" width="2" height="${num(sRowH - 28)}" rx="1" fill="${t.filament}"/>`);
+    }
 
-  const citeSize = 13.5;
-  const citeLh = 26;
-  const ly0 = vy + 98;
-
-  p.push(text("不堆砌对话气泡与圆角卡片——把大模型", "cjk", citeSize, ix, ly0, t.body, { wght: 400, tracking: 0.2 }));
-
-  // Line 2 with [1] dashed-underline inline superscript citation (tight punctuation!)
-  const l2Pre = "编织为 ";
-  const l2Phrase = "可溯源的业务因果组件";
-  const l2Post = "，再以";
-  let cx2 = ix;
-  p.push(text(l2Pre, "cjk", citeSize, cx2, ly0 + citeLh, t.body, { wght: 400, tracking: 0.2 }));
-  cx2 += measure(l2Pre, "cjk", citeSize, 400, 0.2);
-  const w2 = measure(l2Phrase, "cjk", citeSize, 500, 0.2);
-  p.push(text(l2Phrase, "cjk", citeSize, cx2, ly0 + citeLh, t.ink, { wght: 500, tracking: 0.2 }));
-  p.push(
-    `<line x1="${num(cx2)}" y1="${num(ly0 + citeLh + 4.5)}" x2="${num(cx2 + w2)}" y2="${num(ly0 + citeLh + 4.5)}" ` +
-      `stroke="${t.citeDash}" stroke-width="1" stroke-dasharray="2.5 2"/>`
-  );
-  const sup1X = cx2 + w2 + 3;
-  const sup1Y = ly0 + citeLh - 15;
-  p.push(`<rect x="${num(sup1X)}" y="${num(sup1Y)}" width="15" height="15" rx="3" fill="${t.supBg}" stroke="${t.rule}" stroke-width="1"/>`);
-  p.push(text("1", "mono", 9.5, sup1X + 7.5, sup1Y + 11.2, t.supInk, { wght: 600, anchor: "middle" }));
-  p.push(text(l2Post, "cjk", citeSize, sup1X + 17, ly0 + citeLh, t.body, { wght: 400, tracking: 0.2 }));
-
-  // Line 3 with [2] active solid-underline highlighted inline superscript citation
-  const l3Phrase = "零冗余原生交互与人机闭环";
-  const l3Post = " 交付。";
-  const w3 = measure(l3Phrase, "cjk", citeSize, 500, 0.2);
-  p.push(`<rect x="${num(ix - 3)}" y="${num(ly0 + citeLh * 2 - 14.5)}" width="${num(w3 + 6)}" height="20" rx="3" fill="${t.citeBg}"/>`);
-  p.push(text(l3Phrase, "cjk", citeSize, ix, ly0 + citeLh * 2, t.ink, { wght: 500, tracking: 0.2 }));
-  p.push(
-    `<line x1="${num(ix)}" y1="${num(ly0 + citeLh * 2 + 4.5)}" x2="${num(ix + w3)}" y2="${num(ly0 + citeLh * 2 + 4.5)}" ` +
-      `stroke="${t.citeSolid}" stroke-width="1.2"/>`
-  );
-  const sup2X = ix + w3 + 4;
-  const sup2Y = ly0 + citeLh * 2 - 15;
-  p.push(`<rect x="${num(sup2X)}" y="${num(sup2Y)}" width="15" height="15" rx="3" fill="${t.supActiveBg}"/>`);
-  p.push(text("2", "mono", 9.5, sup2X + 7.5, sup2Y + 11.2, t.supActiveInk, { wght: 600, anchor: "middle" }));
-  p.push(text(l3Post, "cjk", citeSize, sup2X + 17, ly0 + citeLh * 2, t.body, { wght: 400, tracking: 0.2 }));
-
-  p.push(text("全站严守 1px 瑞士细线与 95/5 墨色秩序。", "cjk", citeSize, ix, ly0 + citeLh * 3, t.muted, { wght: 400, tracking: 0.2 }));
-
-  // Internal 1px hairline divider
-  const div1Y = vy + 194;
-  p.push(hline(vx + 1, vx + vw - 1, div1Y, t.ruleSoft));
-
-  // Interior Zone B: Matched Evidence Trace rows [1] & [2]
-  const ev1Y = div1Y + 24;
-  p.push(`<rect x="${ix}" y="${num(ev1Y - 11.5)}" width="16" height="16" rx="3" fill="${t.supBg}" stroke="${t.rule}" stroke-width="1"/>`);
-  p.push(text("1", "mono", 10, ix + 8, ev1Y + 0.3, t.supInk, { wght: 600, anchor: "middle" }));
-  p.push(text("确定性因子拆解 · 飞书与经营看板", "cjk", 12.5, ix + 24, ev1Y, t.body, { wght: 500, tracking: 0.1 }));
-  p.push(text("50+ 企业场景 · 3 秒人工拍板与定时复查", "cjk", 11, ix + 24, ev1Y + 18, t.muted, { wght: 400, tracking: 0.1 }));
-
-  const ev2Y = div1Y + 72;
-  p.push(`<rect x="${ix}" y="${num(ev2Y - 11.5)}" width="16" height="16" rx="3" fill="${t.supActiveBg}"/>`);
-  p.push(text("2", "mono", 10, ix + 8, ev2Y + 0.3, t.supActiveInk, { wght: 600, anchor: "middle" }));
-  p.push(text("单文件 ~9 MB Go · Apple Silicon Swift", "cjk", 12.5, ix + 24, ev2Y, t.ink, { wght: 600, tracking: 0.1 }));
-  p.push(text("airdrop-win v1.0.0 · beanbridge v0.5.1", "mono", 10.8, ix + 24, ev2Y + 18, t.muted, { wght: 400, tracking: 0.3 }));
-
-  const div2Y = vy + vh - 58;
-  p.push(hline(vx + 1, vx + vw - 1, div2Y, t.ruleSoft));
-
-  // Interior Zone C: Compact Physical Keycap Footer (6px geometry)
-  const ctaY = div2Y + 13;
-  const ctaLabel = "下方查看公开仓库";
-  const ctaTextW = measure(ctaLabel, "cjk", 12, 600, 0.2);
-  const ctaW = ctaTextW + 44;
-  p.push(`<rect x="${ix}" y="${ctaY}" width="${num(ctaW)}" height="32" rx="6" fill="${t.ctaFill}"/>`);
-  p.push(text(ctaLabel, "cjk", 12, ix + 14, ctaY + 20.5, t.ctaInk, { wght: 600, tracking: 0.2 }));
-  p.push(ICONS.playbookVector(ix + 14 + ctaTextW + 6, ctaY + 9.5, 13, t.ctaInk));
-
-  const secLabel = "SWISS · 1PX GRID";
-  const secW = measure(secLabel, "mono", 10.5, 500, 1.0) + 24;
-  p.push(
-    `<rect x="${num(vx + vw - 20 - secW)}" y="${ctaY}" width="${num(secW)}" height="32" rx="6" ` +
-      `fill="${t.subtle}" stroke="${t.rule}" stroke-width="1"/>`
-  );
-  p.push(text(secLabel, "mono", 10.5, vx + vw - 20 - secW / 2, ctaY + 20, t.muted, { wght: 500, tracking: 1.0, anchor: "middle" }));
-
+    const dotFill = s.status === "live" ? t.liveDot : t.infoDot;
+    p.push(`<circle cx="${vx + 24}" cy="${num(ry + 22)}" r="3" fill="${dotFill}"/>`);
+    p.push(text(s.name, "sans", 14.5, vx + 36, ry + 26.5, t.ink, { wght: 600, tracking: -0.2 }));
+    p.push(text(s.note, "cjk", 12, vx + 36, ry + 46, t.muted, { wght: 400, tracking: 0.1 }));
+    p.push(text(s.spec, "mono", 11.5, vx + vw - 18, ry + 26, s.active ? t.ink : t.muted, { wght: 500, anchor: "end" }));
+  });
   p.push(`</g>`);
 
   // =========================================================================
-  // BAND 2 (y = 408..606): 4-Column Capability Matrix on Open Swiss Canvas
+  // ROW 2 (y = 264..446): 3 Spacious Capability Columns (3 x 400px)
   // =========================================================================
-  const colW = W / 4;
-  const b2Y = band1H;
+  const r2Y = row1H;
   PILLARS.forEach((item, i) => {
-    const cx = i * colW + 28;
-    const nw = measure(item.idx, "mono", 11.5, 600, 1.2);
-    p.push(text(item.idx, "mono", 11.5, cx, b2Y + 32, t.accent, { wght: 600, tracking: 1.2 }));
-    p.push(text(item.label, "cjk", 12, cx + nw + 10, b2Y + 32, t.muted, { wght: 500, tracking: 0.8 }));
+    const cx = i * 400 + 36;
+    const nw = measure(item.idx, "mono", 12, 600, 1.2);
+    p.push(text(item.idx, "mono", 12, cx, r2Y + 38, t.accent, { wght: 600, tracking: 1.2 }));
+    p.push(text(item.tag, "cjk", 13, cx + nw + 10, r2Y + 38, t.muted, { wght: 500, tracking: 0.8 }));
 
-    p.push(text(item.title, "cjk", 18, cx, b2Y + 70, t.ink, { wght: 600, tracking: 0.3 }));
-    p.push(para(item.desc, "cjk", 13.2, cx, b2Y + 99, colW - 56, t.muted, { wght: 400, lh: 21.5, tracking: 0.15, maxLines: 3 }));
-    p.push(text(item.spec, "mono", 10.8, cx, b2Y + band2H - 22, t.faint, { wght: 500, tracking: 1.3 }));
+    p.push(text(item.title, "cjk", 21, cx, r2Y + 86, t.ink, { wght: 500, tracking: 0.3 }));
+    assertFits(item.desc, "cjk", 14, 328, 400, 0.2);
+    p.push(text(item.desc, "cjk", 14, cx, r2Y + 116, t.muted, { wght: 400, tracking: 0.2 }));
+    p.push(text(item.spec, "mono", 11, cx, r2Y + row2H - 26, t.faint, { wght: 500, tracking: 1.4 }));
   });
 
   // =========================================================================
-  // BAND 3 (y = 606..830): Comparative Micro-Dataviz (Data-Honest Real Stats)
+  // ROW 3 (y = 446..564): Minimal Airy Timeline Track (2021 — 2026)
   // =========================================================================
-  const b3Y = band1H + band2H;
+  const r3Y = row1H + row2H;
+  const lx0 = 40;
+  const lx1 = W - 40;
+  const axisY = r3Y + 60;
+  const step = (lx1 - lx0) / (TIMELINE.length - 1);
 
-  // ---- Left 58%: Precision Spectrum Meter
-  p.push(text("02 / 2026 ACTIVE REPOSITORY SPECTRUM", "mono", 11.5, 28, b3Y + 32, t.muted, { wght: 500, tracking: 1.5 }));
-  p.push(text("N = 25 REPOS", "mono", 11.5, split3X - 28, b3Y + 32, t.ink, { wght: 600, tracking: 1.2, anchor: "end" }));
+  p.push(hline(lx0, lx1, axisY, t.rule));
+  // Subtle highlighted final segment (2025 -> 2026)
+  p.push(`<line x1="${num(lx1 - step)}" y1="${num(axisY + 0.5)}" x2="${num(lx1)}" y2="${num(axisY + 0.5)}" stroke="${t.accent}" stroke-width="1.5" shape-rendering="crispEdges"/>`);
 
-  const barX = 28;
-  const barY = b3Y + 58;
-  const barW = split3X - 56;
-  const barH = 28;
-  const segGap = 2;
-  const usableW = barW - segGap * (SPECTRUM_ITEMS.length - 1);
+  TIMELINE.forEach(([yr, cap], i) => {
+    const cx = lx0 + i * step;
+    const last = i === TIMELINE.length - 1;
+    const anchor = i === 0 ? "start" : last ? "end" : "middle";
+    const ax = i === 0 ? 36 : last ? W - 36 : cx;
 
-  p.push(`<rect x="${barX - 2}" y="${barY - 2}" width="${barW + 4}" height="${barH + 4}" rx="5" fill="${t.track}"/>`);
-
-  let sx = barX;
-  SPECTRUM_ITEMS.forEach((item, i) => {
-    const sw = (usableW * item.pct) / 100;
-    const style = t.spectrum[i];
-    const rx = i === 0 || i === SPECTRUM_ITEMS.length - 1 ? 3 : 1;
-    p.push(`<rect x="${num(sx)}" y="${barY}" width="${num(sw)}" height="${barH}" rx="${rx}" fill="${style.fill}"/>`);
-    if (style.hatch) {
-      p.push(`<rect x="${num(sx)}" y="${barY}" width="${num(sw)}" height="${barH}" rx="${rx}" fill="url(#hatch)"/>`);
-    }
-    p.push(text(`${item.pct}%`, "mono", 11.5, sx + sw / 2, barY + 18.5, style.ink, { wght: 600, anchor: "middle" }));
-    sx += sw + segGap;
-  });
-
-  const legY0 = b3Y + 124;
-  const legColW = (split3X - 56) / 2;
-  SPECTRUM_ITEMS.forEach((item, i) => {
-    const col = i % 2;
-    const row = Math.floor(i / 2);
-    const lx = 28 + col * (legColW + 12);
-    const ly = legY0 + row * 42;
-    const style = t.spectrum[i];
-
-    p.push(`<rect x="${num(lx)}" y="${num(ly - 9)}" width="10" height="10" rx="2" fill="${style.fill}"/>`);
-    if (style.hatch) {
-      p.push(`<rect x="${num(lx)}" y="${num(ly - 9)}" width="10" height="10" rx="2" fill="url(#hatch)"/>`);
-    }
-    p.push(text(item.name, "cjk", 13, lx + 18, ly, t.body, { wght: 500, tracking: 0.1 }));
-    p.push(
-      text(`${item.count} · ${item.pct}%`, "mono", 11.5, lx + legColW - 14, ly, t.muted, {
-        wght: 500,
-        anchor: "end",
-      })
-    );
-    if (row === 0) {
-      p.push(hline(lx, lx + legColW - 14, ly + 16, t.ruleSoft));
-    }
-  });
-
-  // ---- Right 42%: 2021 -> 2026 Comparative Output Trajectory (32px header clearance!)
-  const rx3 = split3X + 28;
-  const rw3 = W - split3X - 56;
-  p.push(text("03 / TRAJECTORY 2021 — 2026", "mono", 11.5, rx3, b3Y + 32, t.muted, { wght: 500, tracking: 1.5 }));
-  p.push(text("62 ORIGINAL", "mono", 11.5, W - 28, b3Y + 32, t.ink, { wght: 600, tracking: 1.2, anchor: "end" }));
-
-  const axisY = b3Y + 166;
-  const maxBarH = 68;
-  const maxCount = 26;
-  p.push(hline(rx3, W - 28, axisY, t.rule));
-
-  const slotW = rw3 / TRAJECTORY.length;
-  const colBarW = 36;
-  TRAJECTORY.forEach((pt, i) => {
-    const cx = rx3 + slotW * i + slotW / 2;
-    const bh = Math.max(10, Math.round((pt.count / maxCount) * maxBarH));
-    const bx = cx - colBarW / 2;
-    const by = axisY - bh;
-
-    p.push(`<rect x="${num(bx)}" y="${num(by)}" width="${colBarW}" height="${bh}" rx="2" fill="${pt.peak ? t.barPeak : t.barBase}"/>`);
-
-    if (pt.peak) {
-      // Quiet Precision AnomalyBeacon diamond cleanly below header (by = b3Y + 98 -> label at b3Y + 68 -> 36px below header!)
-      p.push(ICONS.anomalyBeacon(cx - 6, by - 20, 12, t.barPeak));
-      p.push(text(String(pt.count), "mono", 11.5, cx, by - 25, t.ink, { wght: 600, anchor: "middle" }));
+    if (last) {
+      p.push(ICONS.anomalyBeacon(cx - 7, axisY - 6.5, 14, t.accent));
     } else {
-      p.push(text(String(pt.count), "mono", 11, cx, by - 7, t.muted, { wght: 500, anchor: "middle" }));
+      p.push(`<circle cx="${num(cx)}" cy="${num(axisY + 0.5)}" r="4" fill="${t.canvas}" stroke="${t.faint}" stroke-width="1.5"/>`);
     }
 
-    p.push(text(pt.yr, "mono", 11.5, cx, axisY + 20, pt.peak ? t.ink : t.muted, { wght: pt.peak ? 600 : 500, anchor: "middle" }));
-    p.push(text(pt.cap, "cjk", 11, cx, axisY + 39, pt.peak ? t.ink : t.faint, { wght: pt.peak ? 500 : 400, anchor: "middle" }));
-  });
-
-  // =========================================================================
-  // BAND 4 (y = 830..928): 4-Column Core Stack Strip (Width-asserted!)
-  // =========================================================================
-  const b4Y = band1H + band2H + band3H;
-  STACK.forEach(([k, v], i) => {
-    const cx = i * colW + 28;
-    p.push(text(k, "mono", 11, cx, b4Y + 34, t.faint, { wght: 500, tracking: 1.6 }));
-    assertFits(v, "cjk", 12.2, colW - 52, 500, 0.05);
-    p.push(text(v, "cjk", 12.2, cx, b4Y + 66, t.ink, { wght: 500, tracking: 0.05 }));
+    p.push(text(yr, "mono", 12.5, ax, axisY - 18, last ? t.ink : t.muted, { wght: last ? 600 : 500, tracking: 1, anchor }));
+    p.push(text(cap, "cjk", 13.5, ax, axisY + 32, last ? t.ink : t.muted, { wght: last ? 500 : 400, tracking: 0.2, anchor }));
   });
 
   return wrapSvg(
     W,
     H,
-    "Lowkii 工程台账 — 公开项目 airdrop-win、beanbridge、salesup 与企业 AI 工作台、跨端工具及 2021–2026 演进",
+    "Lowkii — 50+ 企业 AI 落地场景；公开项目 airdrop-win、beanbridge、salesup；经营工作台、原生工具与 Agent 工程。",
     p.join("")
   );
 }
