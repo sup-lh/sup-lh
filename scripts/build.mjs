@@ -9,7 +9,8 @@
  *                           stationary focal vessel (cold quartz beam + stationary 2px metallic
  *                           highlight ridge), zero pill soup, zero redundant metadata.
  *
- * Fonts (SIL OFL): Geist.ttf, GeistMono.ttf, NotoSansSC.ttf.
+ * Fonts (SIL OFL): InstrumentSerif-Regular.ttf, InstrumentSerif-Italic.ttf,
+ *                  Geist.ttf, GeistMono.ttf, NotoSansSC.ttf.
  *
  *   pnpm --dir scripts install
  *   node scripts/build.mjs <font-dir> <out-dir>
@@ -28,6 +29,8 @@ const FONT_DIR = path.resolve(fontDirArg);
 const OUT_DIR = path.resolve(outDirArg);
 
 const FONT_FILES = {
+  serif: "InstrumentSerif-Regular.ttf",
+  "serif-i": "InstrumentSerif-Italic.ttf",
   sans: "Geist.ttf",
   mono: "GeistMono.ttf",
   cjk: "NotoSansSC.ttf",
@@ -518,14 +521,17 @@ function buildHero(t) {
   p.push(`<circle cx="${num(W - 36 - estW - 12)}" cy="23" r="3" fill="${t.liveDot}" class="pulse"/>`);
   p.push(text(est, "mono", 11.5, W - 36, 27.5, t.muted, { wght: 500, tracking: 1.8, anchor: "end" }));
 
-  // ---- Left Stage (x = 0..788): Monumental Regular Typography + Generous Whitespace
-  const wmSize = 148;
+  // ---- Left Stage (x = 0..788): Monumental Instrument Serif (Roman + Italic) + Generous Whitespace
+  const wmSize = 186;
   const wmX = 34;
-  const wmY = 232;
-  const wmW = measure("Lowkii", "sans", wmSize, 400, -5.2);
-  p.push(text("Lowkii", "sans", wmSize, wmX, wmY, t.ink, { wght: 400, tracking: -5.2 }));
+  const wmY = 238;
+  const wLow = measure("Low", "serif", wmSize, 400, -3.2);
+  const kiiX = wmX + wLow - 2;
+  const wKii = measure("kii", "serif-i", wmSize, 400, -1.6);
+  p.push(text("Low", "serif", wmSize, wmX, wmY, t.ink, { wght: 400, tracking: -3.2 }));
+  p.push(text("kii", "serif-i", wmSize, kiiX, wmY, t.ink, { wght: 400, tracking: -1.6 }));
   // Strict 0px surgical accent square
-  p.push(`<rect x="${num(wmX + wmW + 12)}" y="${num(wmY - 20)}" width="20" height="20" fill="${t.accent}"/>`);
+  p.push(`<rect x="${num(kiiX + wKii + 12)}" y="${num(wmY - 20)}" width="20" height="20" fill="${t.accent}"/>`);
 
   p.push(text("把 AI 落进真实业务与原生工具。", "cjk", 26, 40, 314, t.ink, { wght: 500, tracking: 0.4 }));
   p.push(text("Go · TypeScript · Swift · Python · 飞书 · MCP", "mono", 12, 40, 368, t.muted, { wght: 400, tracking: 1.2 }));
@@ -638,14 +644,14 @@ function buildWorkbench(t) {
   p.push(text("01", "mono", 12, 36, 40, t.accent, { wght: 600, tracking: 1.2 }));
   p.push(text("企业 AI 落地", "cjk", 13, 36 + nw01 + 10, 40, t.muted, { wght: 500, tracking: 0.8 }));
 
-  // Monumental Geist Regular 400 "50+"
+  // Monumental Instrument Serif "50+"
   const bigX = 32;
-  const bigY = 170;
-  p.push(text("50", "sans", 112, bigX, bigY, t.ink, { wght: 400, tracking: -4.2 }));
-  const w50 = measure("50", "sans", 112, 400, -4.2);
-  p.push(text("+", "sans", 96, bigX + w50 + 2, bigY - 4, t.accent, { wght: 400 }));
+  const bigY = 174;
+  p.push(text("50", "serif", 132, bigX, bigY, t.ink, { wght: 400, tracking: -2 }));
+  const w50 = measure("50", "serif", 132, 400, -2);
+  p.push(text("+", "serif", 118, bigX + w50 + 2, bigY - 4, t.accent, { wght: 400 }));
 
-  const tx = 256;
+  const tx = 238;
   p.push(text("从需求拆解到上线交付", "cjk", 23, tx, 126, t.ink, { wght: 500, tracking: 0.3 }));
   p.push(text("覆盖跨境电商、制造、销售与财务团队的经营闭环。", "cjk", 14.5, tx, 162, t.muted, { wght: 400, tracking: 0.2 }));
 
